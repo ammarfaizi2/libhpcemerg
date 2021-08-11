@@ -1,0 +1,8 @@
+*.o
+*.so
+*.swo
+*.swp
+*.tmp
+*.lock
+*.patch
+/.deps/
