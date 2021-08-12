@@ -28,7 +28,7 @@ inline static void vt_hexdump(void *ptr, size_t len)
 		}
 		pr_intr("|");
 		for (j = 16; len2 && j; len2--, j--) {
-			char dc = *d;
+			unsigned char dc = *d;
 			pr_intr("%c", CHDOT(dc));
 			d++;
 		}

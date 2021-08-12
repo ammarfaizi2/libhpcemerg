@@ -5,7 +5,7 @@
 
 void func_b(void)
 {
-	__asm__ volatile("incq 0");
+	WARN_ON(1);
 }
 
 

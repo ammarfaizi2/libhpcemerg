@@ -10,7 +10,7 @@
 #include <string.h>
 #include <signal.h>
 
-#define EMERG_FILE_VALIDATOR "/tmp/qqq"
+#define EMERG_FILE_VALIDATOR "/tmp/__emerg_tmp_file"
 
 volatile short __emerg_taint = 0;
 volatile emerg_callback_t __pre_emerg_print_trace = NULL;
@@ -76,10 +76,56 @@ static int is_valid_addr(void *addr, size_t len)
 static int is_emerg_pattern(void *addr)
 {
 	/*
-	 * "\x0f\x0b"  ud2
-	 * "\x8d\x05"  lea rax, [rip + ???]
+	 * "\x0f\x0b"		ud2
+	 * "\x48\x8d\x05"	lea rax, [rip + ???]
 	 */
-	return !memcmp("\x0f\x0b\x8d\x05", addr, 4);
+	return !memcmp("\x0f\x0b\x48\x8d\x05", addr, 5);
+}
+
+
+static void emerg_recover(uintptr_t *regs)
+{
+	/* Skip the ud2 and lea. */
+	regs[REG_RIP] += 5 + 4;
+}
+
+
+static void __print_warn(const char *file, unsigned int line, const char *func)
+{
+	pr_intr("  WARNING: PID: %d at %s:%d %s\n", getpid(), file, line, func);
+}
+
+
+static void __print_bug(const char *file, unsigned int line, const char *func)
+{
+	pr_intr("  BUG: PID: %d at %s:%d %s\n", getpid(), file, line, func);
+}
+
+static void print_emerg_notice(uintptr_t rip)
+{
+	int32_t rel_offset;
+	struct emerg_entry *entry;
+
+	memcpy(&rel_offset, (void *)(rip + 5), sizeof(rel_offset));
+	if (rel_offset > 0) {
+		rip += 5 + 4 + (uintptr_t)rel_offset;
+	} else {
+		rel_offset *= -1;
+		rip += 5 + 4;
+		rip -= (uintptr_t)rel_offset;
+	}
+
+	entry = (struct emerg_entry *)rip;
+	switch (entry->type) {
+	case EMERG_TYPE_BUG:
+		__print_bug(entry->file, entry->line, entry->func);
+		break;
+	case EMERG_TYPE_WARN:
+		__print_warn(entry->file, entry->line, entry->func);
+		break;
+	}
+	pr_intr("  %s: %d;  Compiler: " __VERSION__ "\n",
+		__emerg_taint ? "Tainted" : "Not tainted", __emerg_taint);
 }
 
 
@@ -105,6 +151,7 @@ struct func_addr {
 	unsigned	rip_next;
 };
 
+
 static struct func_addr *func_addr_translate(struct func_addr *buf, void *addr)
 {
 	Dl_info i;
@@ -113,7 +160,7 @@ static struct func_addr *func_addr_translate(struct func_addr *buf, void *addr)
 
 	buf->name = i.dli_sname;
 	buf->file = i.dli_fname;
-	buf->rip_next = (uintptr_t)addr - (uintptr_t)i.dli_saddr;
+	buf->rip_next = (unsigned)((uintptr_t)addr - (uintptr_t)i.dli_saddr);
 	return buf;
 }
 
@@ -152,6 +199,7 @@ static void print_backtrace(uintptr_t rip)
 		);
 	}
 }
+
 
 static void dump_register(uintptr_t *regs)
 {
@@ -193,24 +241,45 @@ static void dump_register(uintptr_t *regs)
 }
 
 
+static void dump_stack(void *rsp)
+{
+	pr_intr("  RSP Dump:\n");
+	// VT_HEXDUMP(rsp, 512);
+}
+
+
 static int __emerg_handler(int sig, siginfo_t *si, ucontext_t *ctx)
 {
-	int is_recoverable;
+	int is_recoverable, is_emerg_event;
 	mcontext_t *mctx = &ctx->uc_mcontext;
 	uintptr_t *regs = (uintptr_t *)&mctx->gregs;
 	void *rip = (void *)regs[REG_RIP];
 
-	is_recoverable = (sig == SIGSEGV) ? 0 : is_emerg_pattern(rip);
+	if (sig == SIGSEGV) {
+		is_emerg_event = 0;
+		is_recoverable = 0;
+	} else {
+		is_emerg_event = is_emerg_pattern(rip);
+
+		/* TODO: There are may be other recoverable events. */
+		is_recoverable = is_emerg_event;
+	}
+
+	if (is_emerg_event)
+		print_emerg_notice((uintptr_t)rip);
 
 	pr_intr("  Signal: %d (SIG%s); is_recoverable = %d;\n",
 		sig, sigabbrev_np(sig), is_recoverable);
 
 	dump_register(regs);
-
-	pr_intr("  RSP Dump:\n");
-	VT_HEXDUMP((void *)regs[REG_RSP], 512);
+	dump_stack((void *)regs[REG_RSP]);
 	print_backtrace((uintptr_t)rip);
-	close(validator_fd);
+
+	if (is_recoverable)
+		emerg_recover(regs);
+
+	if (validator_fd != -1)
+		close(validator_fd);
 	validator_fd = -1;
 	return is_recoverable;
 }
@@ -224,7 +293,8 @@ static void _emerg_handler(int sig, siginfo_t *si, ucontext_t *ctx)
 
 	pr_intr("==========================================================\n");
 	if (pre_emerg_print_trace)
-		pre_emerg_print_trace(sig, si, ctx);
+		if (pre_emerg_print_trace(sig, si, ctx))
+			return;
 
 	is_recoverable = __emerg_handler(sig, si, ctx);
 

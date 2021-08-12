@@ -14,6 +14,11 @@
 #define pr_intr printf
 #include "vt_hexdump.h"
 
+#if defined(__clang__)
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wreserved-id-macro"
+#endif
+
 #define __USE_GNU
 #include <signal.h>
 #include <ucontext.h>
@@ -40,6 +45,10 @@
 #define __stringify(EXPR) ____stringify(EXPR)
 #endif
 
+#if defined(__clang__)
+#  pragma clang diagnostic pop
+#endif
+
 #define IN_THE_MAIN_EMERG_H
 #if defined(__x86_64__)
 #include "arch/x64/emerg.h"
@@ -54,7 +63,6 @@
 
 
 struct emerg_entry {
-	uintptr_t		bug_addr;
 	const char		*file;
 	const char		*func;
 	unsigned int		line;

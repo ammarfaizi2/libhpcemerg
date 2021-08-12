@@ -39,4 +39,41 @@ do {									\
 	);								\
 } while (0)
 
+
+#define WARN() ({					\
+	ASM_EMERG__(ASM_UD2, 0, EMERG_TYPE_WARN);	\
+	(1);						\
+})
+
+
+#define WARN_ONCE() ({						\
+	static bool __is_warned = false;			\
+	if (!__is_warned) {					\
+		__is_warned = true;				\
+		ASM_EMERG__(ASM_UD2, 0, EMERG_TYPE_WARN);	\
+	}							\
+	(1);							\
+})
+
+
+#define WARN_ON(COND)				\
+do {						\
+	bool __cond = (COND);			\
+	if (__cond)				\
+		WARN();				\
+	(__cond);				\
+} while (0)
+
+
+#define WARN_ON_ONCE(COND)			\
+do {						\
+	bool __cond = (COND);			\
+	static bool __is_warned = false;	\
+	if (__cond && !__is_warned) {		\
+		__is_warned = true;		\
+		WARN();				\
+	}					\
+	(__cond);				\
+} while (0)
+
 #endif /* #ifndef EMERG__SRC__X64__EMERG_H */
