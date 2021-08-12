@@ -263,7 +263,7 @@ static int __emerg_handler(int sig, siginfo_t *si, ucontext_t *ctx)
 	} else {
 		is_emerg_event = is_emerg_pattern(rip);
 
-		/* TODO: There are may be other recoverable events. */
+		/* TODO: There may be other recoverable events. */
 		is_recoverable = is_emerg_event;
 	}
 
