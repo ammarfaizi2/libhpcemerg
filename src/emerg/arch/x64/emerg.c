@@ -59,7 +59,10 @@ static int validator_fd = -1;
 	(__val);						\
 })
 
-#define cpu_relax() __asm__ volatile("rep\n\tnop")
+#define cpu_relax()			\
+do {					\
+	__asm__ volatile("rep\n\tnop");	\
+} while (0)
 
 
 static int is_valid_addr(void *addr, size_t len)
