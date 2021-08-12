@@ -119,7 +119,7 @@ static struct emerg_entry____ *get_entry(void *_rip)
 static void print_backtrace(uintptr_t rip)
 {
 	int nptrs, i;
-	uintptr_t buf[300];
+	uintptr_t buf[500];
 	char **strings;
 
 	nptrs = backtrace((void **)buf, sizeof(buf) / sizeof(buf[0]));

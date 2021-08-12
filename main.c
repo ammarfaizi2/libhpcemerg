@@ -5,11 +5,7 @@
 
 void func_b(void)
 {
-	WARN_ON(1);
-	WARN_ON(1);
-	WARN_ON(1);
-	BUG_ON(1);
-	BUG_ON(1);
+	__asm__ volatile("incq 0");
 }
 
 
@@ -22,15 +18,7 @@ __attribute__((noinline))
 void func_ss(int p)
 {
 	if (p > 1) {
-		BUG_ON(1);
-		__asm__ volatile(
-			"decl	%0"
-			: "+r"(p)
-			:
-			: "memory"
-		);
-		printf("%d\n", p);
-		func_ss(p);
+		func_ss(p - 1);
 	} else {
 		func_a();
 	}
@@ -38,8 +26,9 @@ void func_ss(int p)
 
 int main(void)
 {
-	emerg_print_trace_init();
+	int ret = emerg_init_handler(EMERG_INIT_ALL);
+	printf("ret = %d\n", ret);
 	printf("Hello World!\n");
-	func_ss(100);
+	func_ss(5);
 	return 0;
 }

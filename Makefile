@@ -3,7 +3,7 @@
 
 CC = clang
 CXX = clang++
-CFLAGS = -Isrc -Wall -Wextra -ggdb3 -fpic -fPIC -O3
+CFLAGS = -Isrc -Wall -Wextra -ggdb3 -fpic -fPIC -O0 -Wno-unused-parameter
 OBJ_CC := main.o
 
 include src/Makefile
