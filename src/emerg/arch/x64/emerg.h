@@ -10,6 +10,7 @@
 #ifndef EMERG__SRC__X64__EMERG_H
 #define EMERG__SRC__X64__EMERG_H
 
+#include <unistd.h>
 
 /*
  * Despite that some emulators terminate on UD2, we use it.
@@ -73,6 +74,23 @@ do {						\
 		__is_warned = true;		\
 		WARN();				\
 	}					\
+	(__cond);				\
+} while (0)
+
+
+#define BUG() ({					\
+	ASM_EMERG__(ASM_UD2, 0, EMERG_TYPE_BUG);	\
+	while (!__emerg_release_bug)			\
+		usleep(100000);				\
+	(1);						\
+})
+
+
+#define BUG_ON(COND)				\
+do {						\
+	bool __cond = (COND);			\
+	if (__cond)				\
+		BUG();				\
 	(__cond);				\
 } while (0)
 

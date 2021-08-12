@@ -6,7 +6,7 @@
 void func_b(void)
 {
 	for (size_t i = 0; i < 100; i++)
-		WARN_ON_ONCE(1);
+		BUG_ON(1);
 }
 
 

@@ -86,6 +86,7 @@ struct emerg_entry {
 
 typedef bool (*emerg_callback_t)(int sig, siginfo_t *si, ucontext_t *ctx);
 extern volatile short __emerg_taint;
+extern volatile bool __emerg_release_bug;
 extern volatile emerg_callback_t __pre_emerg_print_trace;
 extern volatile emerg_callback_t __post_emerg_print_trace;
 extern int emerg_init_handler(unsigned bits);

@@ -12,12 +12,14 @@
 
 #define EMERG_FILE_VALIDATOR "/tmp/__emerg_tmp_file"
 
+volatile bool __emerg_release_bug = false;
 volatile short __emerg_taint = 0;
 volatile emerg_callback_t __pre_emerg_print_trace = NULL;
 volatile emerg_callback_t __post_emerg_print_trace = NULL;
 static unsigned emerg_init_bits = 0;
 static volatile int handler_lock = -1;
 static int validator_fd = -1;
+
 
 #define lock_cmpxchg(PTR, OLD, NEW) ({				\
 	int __ret;						\
@@ -124,7 +126,7 @@ static void print_emerg_notice(uintptr_t rip)
 		__print_warn(entry->file, entry->line, entry->func);
 		break;
 	}
-	pr_intr("  %s: %d;  Compiler: " __VERSION__ "\n",
+	pr_intr("  %s: %d; Compiler: " __VERSION__ "\n",
 		__emerg_taint ? "Tainted" : "Not tainted", __emerg_taint);
 }
 
