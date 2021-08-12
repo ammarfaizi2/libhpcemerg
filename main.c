@@ -5,7 +5,8 @@
 
 void func_b(void)
 {
-	WARN_ON(1);
+	for (size_t i = 0; i < 100; i++)
+		WARN_ON_ONCE(1);
 }
 
 

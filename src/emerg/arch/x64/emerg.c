@@ -244,7 +244,7 @@ static void dump_register(uintptr_t *regs)
 static void dump_stack(void *rsp)
 {
 	pr_intr("  RSP Dump:\n");
-	// VT_HEXDUMP(rsp, 512);
+	VT_HEXDUMP(rsp, 128);
 }
 
 
@@ -293,7 +293,7 @@ static void _emerg_handler(int sig, siginfo_t *si, ucontext_t *ctx)
 
 	pr_intr("==========================================================\n");
 	if (pre_emerg_print_trace)
-		if (pre_emerg_print_trace(sig, si, ctx))
+		if (!pre_emerg_print_trace(sig, si, ctx))
 			return;
 
 	is_recoverable = __emerg_handler(sig, si, ctx);
