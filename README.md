@@ -1,7 +1,8 @@
 
 # HPC Emerg
 Emergency alert and tracer for realtime high-performance computing app
-(work in progress, it's currently useless). 
+(work in progress, it's currently useless). Currently, supported arch
+is only x86-64.
 
 # Example Output
 ```
