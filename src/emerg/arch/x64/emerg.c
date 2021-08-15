@@ -21,50 +21,6 @@ static volatile int handler_lock = -1;
 static int validator_fd = -1;
 
 
-#define lock_cmpxchg(PTR, OLD, NEW) ({				\
-	int __ret;						\
-	int __old = (OLD);					\
-	int __new = (NEW);					\
-	volatile int *__ptr = (volatile int *)(PTR);		\
-	__asm__ volatile(					\
-		"lock\tcmpxchgl %2,%1"				\
-		: "=a"(__ret), "+m" (*__ptr)			\
-		: "r"(__new), "0"(__old)			\
-		: "memory"					\
-	);							\
-	(__ret);						\
-})
-
-#define atomic_read(PTR) ({					\
-	int __ret;						\
-	volatile int *__ptr = (volatile int *)(PTR);		\
-	__asm__ volatile(					\
-		"movl %1, %0"					\
-		: "=r"(__ret)					\
-		: "m"(*__ptr)					\
-		: "memory"					\
-	);							\
-	(__ret);						\
-})
-
-#define atomic_set(PTR, VAL) ({					\
-	int __val = (VAL);					\
-	volatile int *__ptr = (volatile int *)(PTR);		\
-	__asm__ volatile(					\
-		"movl %1, %0"					\
-		: "=m"(*__ptr)					\
-		: "r"(__val)					\
-		: "memory"					\
-	);							\
-	(__val);						\
-})
-
-#define cpu_relax()			\
-do {					\
-	__asm__ volatile("rep\n\tnop");	\
-} while (0)
-
-
 static int is_valid_addr(void *addr, size_t len)
 {
 	if (validator_fd == -1) {
@@ -208,15 +164,27 @@ static void print_backtrace(uintptr_t rip)
 
 static void dump_register(uintptr_t *regs)
 {
+	char func_buf[512];
 	char code_buf[512];
+	struct func_addr fx, *fxp;
 	unsigned short cgfs[4]; /* unsigned short cs, gs, fs, ss.  */
 	memcpy(cgfs, &regs[REG_CSGSFS], sizeof(cgfs));
 	void *rip = (void *)regs[REG_RIP];
 
-	if (is_valid_addr((void *)(regs[REG_RIP] - 42), 64))
+	if (is_valid_addr((void *)(regs[REG_RIP] - 42), 64)) {
 		dump_code(code_buf, rip);
-	else
+		fxp = func_addr_translate(&fx, rip);
+		if (fxp)
+			snprintf(func_buf, sizeof(func_buf),
+				 "at %s(%s+%#x)",
+				 fx.file,
+				 fx.name ? fx.name : "??? 0",
+				 fx.rip_next);
+	} else {
+		fxp = NULL;
+		func_buf[0] = '\0';
 		memcpy(code_buf, "Invalid RIP!", sizeof("Invalid RIP!"));
+	}
 
 	pr_intr(
 		"  RIP: %016lx %s\n"
@@ -229,7 +197,7 @@ static void dump_register(uintptr_t *regs)
 		"  R13: %016lx R14: %016lx R15: %016lx\n"
 		"  CS: %04x GS: %04x FS: %04x SS: %04x\n"
 		"  CR2: %016lx\n\n",
-		regs[REG_RIP], "",
+		regs[REG_RIP], func_buf,
 		code_buf,
 		regs[REG_RSP], regs[REG_EFL],
 		regs[REG_RAX], regs[REG_RBX], regs[REG_RCX],
@@ -324,7 +292,7 @@ static void emerg_handler(int sig, siginfo_t *si, void *arg)
 		return;
 
 retry:
-	old = lock_cmpxchg(&handler_lock, -1, 1);
+	old = atomic_cmpxchgl(&handler_lock, -1, 1);
 	if (old != -1) {
 		do {
 			cpu_relax();

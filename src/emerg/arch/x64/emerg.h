@@ -12,6 +12,54 @@
 
 #include <unistd.h>
 
+
+#define atomic_cmpxchgl(PTR, OLD, NEW) ({			\
+	int __ret;						\
+	int __old = (OLD);					\
+	int __new = (NEW);					\
+	volatile int *__ptr = (volatile int *)(PTR);		\
+	__asm__ volatile(					\
+		"lock\tcmpxchgl %2,%1"				\
+		: "=a"(__ret), "+m" (*__ptr)			\
+		: "r"(__new), "0"(__old)			\
+		: "memory"					\
+	);							\
+	(__ret);						\
+})
+
+
+#define atomic_read(PTR) ({					\
+	int __ret;						\
+	volatile int *__ptr = (volatile int *)(PTR);		\
+	__asm__ volatile(					\
+		"movl %1, %0"					\
+		: "=r"(__ret)					\
+		: "m"(*__ptr)					\
+		: "memory"					\
+	);							\
+	(__ret);						\
+})
+
+
+#define atomic_set(PTR, VAL) ({					\
+	int __val = (VAL);					\
+	volatile int *__ptr = (volatile int *)(PTR);		\
+	__asm__ volatile(					\
+		"movl %1, %0"					\
+		: "=m"(*__ptr)					\
+		: "r"(__val)					\
+		: "memory"					\
+	);							\
+	(__val);						\
+})
+
+
+#define cpu_relax()			\
+do {					\
+	__asm__ volatile("rep\n\tnop");	\
+} while (0)
+
+
 /*
  * Despite that some emulators terminate on UD2, we use it.
  */
