@@ -5,8 +5,16 @@
 
 void func_b(void)
 {
-	for (size_t i = 0; i < 100; i++)
-		BUG_ON(1);
+	__asm__ volatile(
+		"xorq\t%%rsp, %%rsp\n\t"
+		"addq\t$100, %%rsp\n\t"
+		"movq\t(%%rsp), %%rax\n\t"
+		:
+		:
+		: "memory"
+	);
+	// for (size_t i = 0; i < 100; i++)
+	// 	BUG_ON(1);
 }
 
 

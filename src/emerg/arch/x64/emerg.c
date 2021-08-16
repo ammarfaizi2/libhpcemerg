@@ -19,7 +19,7 @@ volatile emerg_callback_t __post_emerg_print_trace = NULL;
 static unsigned emerg_init_bits = 0;
 static volatile int handler_lock = -1;
 static int validator_fd = -1;
-
+static char alt_stack[0x1000 * 1024];
 
 static int is_valid_addr(void *addr, size_t len)
 {
@@ -151,7 +151,7 @@ static void print_backtrace(uintptr_t rip)
 		if (!func_addr_translate(&fx, (void *)fa))
 			continue;
 
-		pr_intr("  %s[%#016lx] %s(%s+%#x)\n",
+		pr_intr("  %s[<%#016lx>] %s(%s+%#x)\n",
 			(rip == fa) ? "%rip => " : "        ",
 			fa,
 			fx.file,
@@ -216,8 +216,12 @@ static void dump_register(uintptr_t *regs)
 
 static void dump_stack(void *rsp)
 {
+	const size_t len = 128;
 	pr_intr("  RSP Dump:\n");
-	VT_HEXDUMP(rsp, 128);
+	if (is_valid_addr(rsp, len))
+		VT_HEXDUMP(rsp, len);
+	else
+		puts("  RSP is invalid!\n");
 }
 
 
@@ -313,7 +317,16 @@ int emerg_init_handler(unsigned bits)
 
 	memset(&act, 0, sizeof(act));
 	act.sa_sigaction = &emerg_handler;
-	act.sa_flags = SA_SIGINFO;
+	act.sa_flags = SA_SIGINFO | SA_ONSTACK;
+
+	if (bits & EMERG_INIT_ALL) {
+		stack_t st;
+		st.ss_sp = alt_stack;
+		st.ss_flags = 0;
+		st.ss_size = sizeof(alt_stack);
+		if (sigaltstack(&st, NULL))
+			return -errno;
+	}
 
 	if (bits & (EMERG_INIT_BUG | EMERG_INIT_WARN | EMERG_INIT_SIGILL))
 		sigaction(SIGILL, &act, NULL);
