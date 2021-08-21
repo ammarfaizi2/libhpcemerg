@@ -311,8 +311,8 @@ static int ___emerg_handler(int sig, siginfo_t *si, ucontext_t *ctx)
 	if (likely(is_emerg_event))
 		print_emerg_notice((uintptr_t)rip);
 
-	pr_intr("  Signal: %d (SIG%s); is_recoverable = %d;\n", sig,
-		sigabbrev_np(sig), is_recoverable);
+	pr_intr("  Signal: %d; is_recoverable = %d;\n", sig,
+		is_recoverable);
 
 	dump_register(regs);
 	dump_stack((void *)regs[REG_RSP]);
