@@ -3,7 +3,9 @@
 # @author Ammar Faizi <ammarfaizi2@gmail.com> https://www.facebook.com/ammarfaizi2
 # @license GPL-2.0-only
 #
-# TeaVPN2 - Free VPN Software
+# hpc_emerg - Emergency alert and tracer for realtime
+# high-performance computing app (work in progress,
+# currently supported env is only Linux x86-64).
 #
 # Copyright (C) 2021  Ammar Faizi
 #
