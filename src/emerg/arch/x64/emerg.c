@@ -106,13 +106,13 @@ static void emerg_recover(uintptr_t *regs)
 
 static void __print_warn(const char *file, unsigned int line, const char *func)
 {
-	pr_intr("  WARNING: PID: %d at %s:%d %s\n", getpid(), file, line, func);
+	pr_intr("  WARNING: PID: %d at %s:%u %s\n", getpid(), file, line, func);
 }
 
 
 static void __print_bug(const char *file, unsigned int line, const char *func)
 {
-	pr_intr("  BUG: PID: %d at %s:%d %s\n", getpid(), file, line, func);
+	pr_intr("  BUG: PID: %d at %s:%u %s\n", getpid(), file, line, func);
 }
 
 
@@ -290,6 +290,9 @@ static void dump_stack(void *rsp)
 
 static int ___emerg_handler(int sig, siginfo_t *si, ucontext_t *ctx)
 {
+	/* TODO: extract information from @si */
+	(void)si;
+
 	int is_recoverable, is_emerg_event;
 	mcontext_t *mctx = &ctx->uc_mcontext;
 	uintptr_t *regs = (uintptr_t *)&mctx->gregs;

@@ -19,7 +19,9 @@
 #  pragma clang diagnostic ignored "-Wreserved-id-macro"
 #endif
 
-#define __USE_GNU
+#ifndef __USE_GNU
+#  define __USE_GNU
+#endif
 #include <signal.h>
 #include <ucontext.h>
 #include <execinfo.h>
