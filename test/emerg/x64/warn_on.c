@@ -4,10 +4,24 @@
  */
 
 #include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+#include <pthread.h>
 #include <emerg/emerg.h>
 
 
 int main(void)
 {
+	pthread_t thread;
+
+	if (emerg_init_handler(EMERG_INIT_ALL)) {
+		perror("emerg_init_handler");
+		return 1;
+	}
+
+	if (WARN_ON(0))
+		return 1;
+
+	WARN_ON(1);
 	return 0;
 }

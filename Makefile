@@ -47,10 +47,10 @@ LDFLAGS		:= -rdynamic -ggdb3
 LIB_LDFLAGS	:= -lpthread -ldl
 
 # Flags that only apply to C
-CFLAGS		:= -std=c11
+CFLAGS		:=
 
 # Flags that only apply to C++
-CXXFLAGS	:= -std=c++2a
+CXXFLAGS	:=
 
 # Flags that only apply to PIC objects.
 PIC_FLAGS	:= -fPIC -fpic
@@ -66,7 +66,6 @@ C_CXX_FLAGS := \
 	-fno-omit-frame-pointer \
 	-fdata-sections \
 	-ffunction-sections \
-	-pedantic-errors \
 	-D_GNU_SOURCE \
 	-DVERSION=$(VERSION) \
 	-DPATCHLEVEL=$(PATCHLEVEL) \

@@ -14,7 +14,7 @@ TEST_EXE := \
 
 $(TEST_EXE): $(TARGET_BIN)
 	$(CC_PRINT)
-	$(Q)$(CC) $(PIC_FLAGS) $(DEPFLAGS_EXE) $(CFLAGS) $(EXE_TO_C) -o $(@) -L$(BASE_DIR) -lhpcemerg
+	$(Q)$(CC) $(PIC_FLAGS) $(DEPFLAGS_EXE) $(CFLAGS) $(EXE_TO_C) -o $(@) -L$(BASE_DIR) -lhpcemerg -lpthread
 
 #
 # Include generated dependencies
