@@ -25,24 +25,29 @@
 #include <execinfo.h>
 
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#  define _GNU_SOURCE
 #endif
+
 #include <dlfcn.h>
 
 #ifndef likely
-#define likely(COND) __builtin_expect((bool)(COND), 1)
+#  define likely(COND) __builtin_expect((bool)(COND), 1)
 #endif
 
 #ifndef unlikely
-#define unlikely(COND) __builtin_expect((bool)(COND), 0)
+#  define unlikely(COND) __builtin_expect((bool)(COND), 0)
 #endif
 
 #ifndef ____stringify
-#define ____stringify(EXPR) #EXPR
+#  define ____stringify(EXPR) #EXPR
 #endif
 
 #ifndef __stringify
-#define __stringify(EXPR) ____stringify(EXPR)
+#  define __stringify(EXPR) ____stringify(EXPR)
+#endif
+
+#ifndef __maybe_unused
+#  define __maybe_unused __attribute__((unused))
 #endif
 
 #if defined(__clang__)
@@ -90,5 +95,6 @@ extern volatile bool __emerg_release_bug;
 extern volatile emerg_callback_t __pre_emerg_print_trace;
 extern volatile emerg_callback_t __post_emerg_print_trace;
 extern int emerg_init_handler(unsigned bits);
+extern void emerg_handler(int sig, siginfo_t *si, void *arg);
 
 #endif /* #ifndef EMERG__SRC__EMERG_H */

@@ -1,6 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0
+// SPDX-License-Identifier: GPL-2.0-only
 /*
+ * hpc_emerg for Linux x86-64.
+ *
  * Copyright (C) 2021  Ammar Faizi <ammarfaizi2@gmail.com>
+ *
+ * Link: https://github.com/ammarfaizi2/hpc_emerg
  */
 
 #include "../../emerg.h"
@@ -9,28 +13,77 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <pthread.h>
+#include <sys/mman.h>
 
-#define EMERG_FILE_VALIDATOR "/tmp/__emerg_tmp_file"
+#define ALT_STACK_SIZE (1024ul * 1024ul * 8ul)
 
 volatile bool __emerg_release_bug = false;
 volatile short __emerg_taint = 0;
 volatile emerg_callback_t __pre_emerg_print_trace = NULL;
 volatile emerg_callback_t __post_emerg_print_trace = NULL;
-static unsigned emerg_init_bits = 0;
-static volatile int handler_lock = -1;
-static int validator_fd = -1;
-static char alt_stack[0x1000 * 1024];
 
+
+/*
+ * @vfd is a file descriptor to a temporary file. This is used to validate
+ * the memory address by using sys_write().
+ *
+ * sys_write() returns -EFAULT if the memory address isn't valid, hence we
+ * can abuse this situation for virtual address validation before dumping
+ * the memory content inside the interrupt handler. We are not allowed to
+ * fault inside the interrupt handler.
+ *
+ * If someone knows better workaround for this, please send me the idea
+ * or pull request to the GitHub repository.
+ *
+ * --
+ *  Ammar Faizi <ammarfaizi2@gnuweeb.org>
+ */
+static int vfd = -1;
+static __maybe_unused const char emerg_file_tmp[] = "/tmp/emerg_file_tmp.tmp";
+
+static unsigned emerg_init_bits = 0;
+static pthread_mutex_t emerg_lock = PTHREAD_MUTEX_INITIALIZER;
+
+/*
+ * Regarding @alt_stack:
+ *
+ * commit 8e5629ffd1dd36d716da9ec24cda2955c43a1865
+ * Author: Ammar Faizi <ammarfaizi2@gnuweeb.org>
+ * Date:   Mon Aug 16 16:38:31 2021 +0700
+ *
+ *  hpc_emerg: use sigaltstack to handle bad %rsp value
+ *   
+ *  Aleksey Covacevice wrote:
+ *  > I hope you're aware that introspection through signal handlers is not
+ *  > reliable. Eg.: if your stack is corrupted somehow, there's little
+ *  > chance you can do anything else (since you can't even safely allocate
+ *  > local storage).
+ *  
+ *  Use sigaltstack() to guarantee some stack space even in stack corruption
+ *  scenarios.
+ *   
+ *  Suggested-by: Aleksey Covacevice
+ *  Link: https://t.me/assemblybr/37701
+ *  Signed-off-by: Ammar Faizi <ammarfaizi2@gnuweeb.org>
+ */
+static char alt_stack[ALT_STACK_SIZE];
+
+
+/*
+ * Validate virtual address (make sure it is readable as well).
+ * Returns 1 if the address is valid and readable, otherwise returns 0.
+ */
 static int is_valid_addr(void *addr, size_t len)
 {
-	if (validator_fd == -1) {
-		validator_fd = open(EMERG_FILE_VALIDATOR, O_CREAT | O_WRONLY, 0777);
-		if (validator_fd < 0) {
+	if (unlikely(vfd == -1)) {
+		// vfd = open(emerg_file_tmp, O_CREAT | O_WRONLY, 0700);
+		vfd = memfd_create("emerg_tmp", MFD_CLOEXEC);
+		if (unlikely(vfd < 0))
 			return 0;
-		}
 	}
 
-	return (write(validator_fd, addr, len) == (ssize_t)len);
+	return (write(vfd, addr, len) == (ssize_t)len);
 }
 
 
@@ -62,6 +115,7 @@ static void __print_bug(const char *file, unsigned int line, const char *func)
 	pr_intr("  BUG: PID: %d at %s:%d %s\n", getpid(), file, line, func);
 }
 
+
 static void print_emerg_notice(uintptr_t rip)
 {
 	int32_t rel_offset;
@@ -85,6 +139,10 @@ static void print_emerg_notice(uintptr_t rip)
 		__print_warn(entry->file, entry->line, entry->func);
 		break;
 	}
+
+	/*
+	 * TODO: Dump taint list when the process is tainted.
+	 */
 	pr_intr("  %s: %d; Compiler: " __VERSION__ "\n",
 		__emerg_taint ? "Tainted" : "Not tainted", __emerg_taint);
 }
@@ -131,6 +189,10 @@ static void print_backtrace(uintptr_t rip)
 	int nptrs, i;
 	uintptr_t buf[300];
 
+	/*
+	 * TODO: create safe backtrace routine.
+	 */
+
 	pr_intr("  Call Trace: \n");
 	if (!is_valid_addr((void *)rip, 1)) {
 		pr_intr("    Not printing call trace due to invalid RIP!\n"
@@ -138,6 +200,7 @@ static void print_backtrace(uintptr_t rip)
 			"    Please use the coredump file for further investigation!\n");
 		return;
 	}
+
 	nptrs = backtrace((void **)buf, sizeof(buf) / sizeof(buf[0]));
 	if (nptrs <= 0) {
 		pr_intr("  Unable to retrieve backtrace!\n");
@@ -171,7 +234,7 @@ static void dump_register(uintptr_t *regs)
 	memcpy(cgfs, &regs[REG_CSGSFS], sizeof(cgfs));
 	void *rip = (void *)regs[REG_RIP];
 
-	if (is_valid_addr((void *)(regs[REG_RIP] - 42), 64)) {
+	if (likely(is_valid_addr((void *)(regs[REG_RIP] - 42), 64))) {
 		dump_code(code_buf, rip);
 		fxp = func_addr_translate(&fx, rip);
 		if (fxp)
@@ -218,21 +281,21 @@ static void dump_stack(void *rsp)
 {
 	const size_t len = 128;
 	pr_intr("  RSP Dump:\n");
-	if (is_valid_addr(rsp, len))
+	if (likely(is_valid_addr(rsp, len)))
 		VT_HEXDUMP(rsp, len);
 	else
-		puts("  RSP is invalid!\n");
+		pr_intr("  RSP is invalid!\n\n");
 }
 
 
-static int __emerg_handler(int sig, siginfo_t *si, ucontext_t *ctx)
+static int ___emerg_handler(int sig, siginfo_t *si, ucontext_t *ctx)
 {
 	int is_recoverable, is_emerg_event;
 	mcontext_t *mctx = &ctx->uc_mcontext;
 	uintptr_t *regs = (uintptr_t *)&mctx->gregs;
 	void *rip = (void *)regs[REG_RIP];
 
-	if (sig == SIGSEGV) {
+	if (unlikely(sig == SIGSEGV)) {
 		is_emerg_event = 0;
 		is_recoverable = 0;
 	} else {
@@ -242,69 +305,73 @@ static int __emerg_handler(int sig, siginfo_t *si, ucontext_t *ctx)
 		is_recoverable = is_emerg_event;
 	}
 
-	if (is_emerg_event)
+	if (likely(is_emerg_event))
 		print_emerg_notice((uintptr_t)rip);
 
-	pr_intr("  Signal: %d (SIG%s); is_recoverable = %d;\n",
-		sig, sigabbrev_np(sig), is_recoverable);
+	pr_intr("  Signal: %d (SIG%s); is_recoverable = %d;\n", sig,
+		sigabbrev_np(sig), is_recoverable);
 
 	dump_register(regs);
 	dump_stack((void *)regs[REG_RSP]);
 	print_backtrace((uintptr_t)rip);
 
-	if (is_recoverable)
+	if (likely(is_recoverable))
 		emerg_recover(regs);
 
-	if (validator_fd != -1)
-		close(validator_fd);
-	validator_fd = -1;
+	if (likely(vfd != -1)) {
+		close(vfd);
+		// unlink(emerg_file_tmp);
+		vfd = -1;
+	}
 	return is_recoverable;
 }
 
 
-static void _emerg_handler(int sig, siginfo_t *si, ucontext_t *ctx)
+static void __emerg_handler(int sig, siginfo_t *si, ucontext_t *ctx)
 {
 	int is_recoverable;
 	emerg_callback_t pre_emerg_print_trace = __pre_emerg_print_trace;
 	emerg_callback_t post_emerg_print_trace = __post_emerg_print_trace;
+
+	__asm__ volatile(
+		"mfence"
+		: "+r"(pre_emerg_print_trace), "+r"(post_emerg_print_trace)
+		:
+		: "memory"
+	);
 
 	pr_intr("==========================================================\n");
 	if (pre_emerg_print_trace)
 		if (!pre_emerg_print_trace(sig, si, ctx))
 			return;
 
-	is_recoverable = __emerg_handler(sig, si, ctx);
+	is_recoverable = ___emerg_handler(sig, si, ctx);
 
 	if (post_emerg_print_trace)
 		post_emerg_print_trace(sig, si, ctx);
 	pr_intr("==========================================================\n");
 
-	if (!is_recoverable)
+	if (unlikely(!is_recoverable)) {
+		pthread_mutex_unlock(&emerg_lock);
 		abort();
+		__builtin_unreachable();
+	}
 }
 
 
-static void emerg_handler(int sig, siginfo_t *si, void *arg)
+void emerg_handler(int sig, siginfo_t *si, void *arg)
 {
-	int old;
 	ucontext_t *ctx = (ucontext_t *)arg;
 
-	if (sig == SIGSEGV && !(emerg_init_bits & EMERG_INIT_SIGSEGV))
+	if (unlikely(sig == SIGSEGV && !(emerg_init_bits & EMERG_INIT_SIGSEGV)))
 		return;
 
-	if (sig == SIGFPE && !(emerg_init_bits & EMERG_INIT_SIGFPE))
+	if (unlikely(sig == SIGFPE && !(emerg_init_bits & EMERG_INIT_SIGFPE)))
 		return;
 
-retry:
-	old = atomic_cmpxchgl(&handler_lock, -1, 1);
-	if (old != -1) {
-		do {
-			cpu_relax();
-		} while (atomic_read(&handler_lock) != -1);
-		goto retry;
-	}
-	_emerg_handler(sig, si, ctx);
-	atomic_set(&handler_lock, -1);
+	pthread_mutex_lock(&emerg_lock);
+	__emerg_handler(sig, si, ctx);
+	pthread_mutex_unlock(&emerg_lock);
 }
 
 
