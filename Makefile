@@ -150,6 +150,7 @@ OBJ_TMP_CC	:=
 all: $(TARGET_BIN)
 
 include $(BASE_DIR)/src/Makefile
+include $(BASE_DIR)/test/Makefile
 
 #
 # Create dependency directories
@@ -191,7 +192,7 @@ $(TARGET_BIN): $(OBJ_CC) $(OBJ_PRE_CC)
 
 
 clean:
-	$(Q)$(RM) -vf $(TARGET_BIN) $(OBJ_CC) $(OBJ_PRE_CC)
+	$(Q)$(RM) -vf $(TARGET_BIN) $(OBJ_CC) $(OBJ_PRE_CC) $(TEST_EXE)
 
 
 .PHONY: all clean

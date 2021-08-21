@@ -6,7 +6,5 @@
 # Copyright (C) 2021  Ammar Faizi
 #
 
-DEP_DIRS += $(BASE_DEP_DIR)/test/emerg
-
-# TODO: create arch detector to include specific Makefile
-include $(BASE_DIR)/test/emerg/x64/Makefile
+DEP_DIRS += $(BASE_DEP_DIR)/test
+include $(BASE_DIR)/test/emerg/Makefile
