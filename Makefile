@@ -13,13 +13,14 @@
 VERSION	= 0
 PATCHLEVEL = 0
 SUBLEVEL = 1
-EXTRAVERSION := 
-NAME = hpc_emerg
+EXTRAVERSION := -rc1
+NAME = libhpcemerg
 TARGET_BIN = libhpcemerg.so
-PACKAGE_NAME = $(TARGET_BIN)-$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 
 GIT_HASH = $(shell git log --pretty=format:'%H' -n 1 2>/dev/null || echo "")
 EXTRAVERSION := $(EXTRAVERSION)-$(GIT_HASH)
+
+PACKAGE_NAME = $(TARGET_BIN)-$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 
 #
 # Bin
@@ -209,7 +210,8 @@ release:
 	mkdir -vp hpc_emerg;
 	cp -rfv $(RELEASE_FILES) hpc_emerg;
 	tar -c hpc_emerg | gzip -9c > hpc_emerg.tar.gz;
+	zip -9r hpc_emerg.zip hpc_emerg;
 	rm -rf hpc_emerg;
-	sha1sum hpc_emerg.tar.gz $(TARGET_BIN);
+	sha1sum hpc_emerg.tar.gz hpc_emerg.zip $(TARGET_BIN);
 
 .PHONY: all clean release
