@@ -97,7 +97,7 @@ do {									\
 
 #define WARN_ONCE() ({						\
 	static bool __is_warned = false;			\
-	if (!__is_warned) {					\
+	if (unlikely(!__is_warned)) {				\
 		__is_warned = true;				\
 		ASM_EMERG__(ASM_UD2, 0, EMERG_TYPE_WARN);	\
 	}							\
@@ -107,20 +107,20 @@ do {									\
 
 #define WARN_ON(COND) ({			\
 	bool __cond = (COND);			\
-	if (__cond)				\
+	if (unlikely(__cond))			\
 		WARN();				\
-	(__cond);				\
+	(unlikely(__cond));			\
 })
 
 
 #define WARN_ON_ONCE(COND) ({			\
 	bool __cond = (COND);			\
 	static bool __is_warned = false;	\
-	if (__cond && !__is_warned) {		\
+	if (unlikely(__cond && !__is_warned)) {	\
 		__is_warned = true;		\
 		WARN();				\
 	}					\
-	(__cond);				\
+	(unlikely(__cond));			\
 })
 
 
@@ -134,9 +134,9 @@ do {									\
 
 #define BUG_ON(COND) ({				\
 	bool __cond = (COND);			\
-	if (__cond)				\
+	if (unlikely(__cond))			\
 		BUG();				\
-	(__cond);				\
+	(unlikely(__cond));			\
 })
 
 #endif /* #ifndef EMERG__SRC__X64__EMERG_H */
