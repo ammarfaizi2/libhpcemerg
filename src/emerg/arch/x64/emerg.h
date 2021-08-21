@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0
+// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2021  Ammar Faizi <ammarfaizi2@gmail.com>
  */
@@ -105,17 +105,15 @@ do {									\
 })
 
 
-#define WARN_ON(COND)				\
-do {						\
+#define WARN_ON(COND) ({			\
 	bool __cond = (COND);			\
 	if (__cond)				\
 		WARN();				\
 	(__cond);				\
-} while (0)
+})
 
 
-#define WARN_ON_ONCE(COND)			\
-do {						\
+#define WARN_ON_ONCE(COND) ({			\
 	bool __cond = (COND);			\
 	static bool __is_warned = false;	\
 	if (__cond && !__is_warned) {		\
@@ -123,7 +121,7 @@ do {						\
 		WARN();				\
 	}					\
 	(__cond);				\
-} while (0)
+})
 
 
 #define BUG() ({					\
@@ -134,12 +132,11 @@ do {						\
 })
 
 
-#define BUG_ON(COND)				\
-do {						\
+#define BUG_ON(COND) ({				\
 	bool __cond = (COND);			\
 	if (__cond)				\
 		BUG();				\
 	(__cond);				\
-} while (0)
+})
 
 #endif /* #ifndef EMERG__SRC__X64__EMERG_H */

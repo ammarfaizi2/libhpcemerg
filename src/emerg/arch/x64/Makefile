@@ -7,7 +7,8 @@
 # Copyright (C) 2021  Ammar Faizi
 #
 
-INCLUDE_DIR += -I$(BASE_DIR)/src
-DEP_DIRS += $(BASE_DEP_DIR)/src
+DEP_DIRS += $(BASE_DEP_DIR)/src/emerg/arch/x64
 
-include $(BASE_DIR)/src/emerg/Makefile
+
+OBJ_CC += \
+	$(BASE_DIR)/src/emerg/arch/x64/emerg.o
