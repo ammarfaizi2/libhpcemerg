@@ -18,7 +18,7 @@ NAME = hpc_emerg
 TARGET_BIN = libhpcemerg.so
 PACKAGE_NAME = $(TARGET_BIN)-$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 
-GIT_HASH = $(shell git log --pretty=format:'%H' -n 1)
+GIT_HASH = $(shell git log --pretty=format:'%H' -n 1 2>/dev/null || echo "")
 EXTRAVERSION := $(EXTRAVERSION)-$(GIT_HASH)
 
 #
@@ -194,5 +194,22 @@ $(TARGET_BIN): $(OBJ_CC) $(OBJ_PRE_CC)
 clean:
 	$(Q)$(RM) -vf $(TARGET_BIN) $(OBJ_CC) $(OBJ_PRE_CC) $(TEST_EXE)
 
+RELEASE_FILES := \
+	.github \
+	src \
+	test \
+	.gitignore \
+	Makefile \
+	README.md \
+	LICENSE
 
-.PHONY: all clean
+release:
+	+$(MAKE) RELEASE_MODE=1 clean;
+	+$(MAKE) RELEASE_MODE=1;
+	mkdir -vp hpc_emerg;
+	cp -rfv $(RELEASE_FILES) hpc_emerg;
+	tar -c hpc_emerg | gzip -9c > hpc_emerg.tar.gz;
+	rm -rf hpc_emerg;
+	sha1sum hpc_emerg.tar.gz $(TARGET_BIN);
+
+.PHONY: all clean release
