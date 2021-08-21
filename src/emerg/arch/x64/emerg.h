@@ -78,7 +78,7 @@ do {									\
 		(TYPE)							\
 	};								\
 									\
-	__asm__ inline volatile(					\
+	__asm__ volatile(						\
 		"# ASM_EMERG__\n\t"					\
 		INS "\n\t"						\
 		"leaq	%0, %%rax"					\
