@@ -25,7 +25,7 @@ BASE_DIR	:= $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 BASE_DIR	:= $(strip $(patsubst %/, %, $(BASE_DIR)))
 BASE_DEP_DIR	:= $(BASE_DIR)/.deps
 MAKEFILE_FILE	:= $(lastword $(MAKEFILE_LIST))
-INCLUDE_DIR	= -I$(BASE_DIR)
+INCLUDE_DIR	= -I$(BASE_DIR) -I$(BASE_DIR)/src
 PACKAGE_NAME	:= $(TARGET)-$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 
 ifndef DEBUG_MODE
