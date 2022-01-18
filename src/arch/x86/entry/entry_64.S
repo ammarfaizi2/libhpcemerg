@@ -10,20 +10,20 @@ target_func:
 	.quad 0
 
 .section .text
-.global hpcemerg_enable
-.global hpcemerg_disable
-.global hpcemerg_set_target_func
+.global hpcemerg_fentry_enable
+.global hpcemerg_fentry_disable
+.global hpcemerg_fentry_set_target_func
 .global __fentry__
 
-hpcemerg_enable:
+hpcemerg_fentry_enable:
 	movb	$1, enabled(%rip)
 	retq
 
-hpcemerg_disable:
+hpcemerg_fentry_disable:
 	movb	$0, enabled(%rip)
 	retq
 
-hpcemerg_set_target_func:
+hpcemerg_fentry_set_target_func:
 	movq	%rdi, target_func(%rip)
 	retq
 

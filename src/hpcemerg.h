@@ -6,8 +6,8 @@
 #ifndef LIBHPCEMERG_H__
 #define LIBHPCEMERG_H__
 
-extern void hpcemerg_enable(void);
-extern void hpcemerg_disable(void);
-extern void hpcemerg_set_target_func(void (*target)(void));
+extern void hpcemerg_fentry_enable(void);
+extern void hpcemerg_fentry_disable(void);
+extern void hpcemerg_fentry_set_target_func(void (*target)(void));
 
 #endif /* #ifndef LIBHPCEMERG_H__ */
