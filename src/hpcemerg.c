@@ -11,11 +11,15 @@
 #include <pthread.h>
 #include <sys/mman.h>
 
+static struct hpcemerg_ctx *g_ctx = NULL;
+
 static void internal_hpcemerg_handler(int sig, siginfo_t *si, void *arg)
 {
 	(void) sig;
 	(void) si;
 	(void) arg;
+	if (g_ctx->param.user_func)
+		g_ctx->param.user_func(sig, si, arg);
 }
 
 static int install_signal_handler(struct hpcemerg_ctx *ctx)
@@ -110,6 +114,7 @@ int hpcemerg_init(struct hpcemerg_init_param *p, struct hpcemerg_ctx **ctx_p)
 		goto out_unlock;
 
 	*ctx_p = ctx;
+	g_ctx = ctx;
 	return 0;
 
 out_unlock:
