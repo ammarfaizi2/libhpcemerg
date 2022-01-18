@@ -58,7 +58,7 @@ int hpcemerg_init(struct hpcemerg_init_param *p, struct hpcemerg_ctx **ctx_p)
 	int ret;
 	struct hpcemerg_ctx *ctx;
 
-	ctx = mmap(NULL, sizeof(*ctx), PROT_READ | PROT_EXEC,
+	ctx = mmap(NULL, sizeof(*ctx), PROT_READ | PROT_WRITE,
 		   MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 	if (ctx == MAP_FAILED)
 		return -errno;
