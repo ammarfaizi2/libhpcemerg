@@ -25,4 +25,5 @@ endif
 
 MKDIR_PRINT	= $(S)echo "   MKDIR	" "$(@:$(BASE_DIR)/%=%)"
 CC_PRINT	= $(S)echo "   CC		" "$(@:$(BASE_DIR)/%=%)"
-LD_PRINT	= $(S)echo "   LD		" "$(@)"
+LD_PRINT	= $(S)echo "   LD		" "$(@:$(BASE_DIR)/%=%)"
+AS_PRINT	= $(S)echo "   AS		" "$(@:$(BASE_DIR)/%=%)"

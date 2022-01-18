@@ -52,6 +52,9 @@ DEPFLAGS = -MT "$@" -MMD -MP -MF "$(@:$(BASE_DIR)/%.o=$(BASE_DEP_DIR)/%.d)"
 # Convert *.o filename to *.c
 O_TO_C = $(@:$(BASE_DIR)/%.o=%.c)
 
+# Convert *.o filename to *.S
+O_TO_S = $(@:$(BASE_DIR)/%.o=%.S)
+
 override CFLAGS = $(C_CXX_FLAGS)
 override CXXFLAGS = $(C_CXX_FLAGS) 
 

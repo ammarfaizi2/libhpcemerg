@@ -7,3 +7,5 @@ DEP_DIRS += $(BASE_DEP_DIR)/src
 
 OBJ_CC += \
 	$(BASE_DIR)/src/hpcemerg.o
+
+include $(BASE_DIR)/src/arch/x86/entry/Makefile
