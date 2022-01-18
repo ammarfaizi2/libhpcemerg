@@ -2,7 +2,17 @@
 *.so
 *.swo
 *.swp
+*.log
 *.tmp
 *.lock
+*.dump
+*.gcno
+*.gcda
+*.gcov
+*.test
+*.tmp.c
 *.patch
 /.deps/
+/.vscode/
+/config-host.h
+/config-host.mak
