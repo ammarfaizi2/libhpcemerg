@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <stddef.h>
 #include <string.h>
+#include <pthread.h>
 #include <sys/mman.h>
 
 static void internal_hpcemerg_handler(int sig, siginfo_t *si, void *arg)
@@ -63,6 +64,27 @@ static int _hpcemerg_init(struct hpcemerg_ctx *ctx)
 	return 0;
 }
 
+static void *emergency_thread_pool(void *ctx_v)
+{
+	struct hpcemerg_ctx *ctx = ctx_v;
+
+	(void) ctx;
+	return NULL;
+}
+
+static int spawn_emergency_pool(struct hpcemerg_ctx *ctx)
+{
+	int ret;
+
+	ret = pthread_create(&ctx->thread, NULL, emergency_thread_pool, ctx);
+	if (ret)
+		return ret;
+
+	pthread_detach(ctx->thread);
+	pthread_setname_np(ctx->thread, "hpcemerg-pool");
+	return 0;
+}
+
 int hpcemerg_init(struct hpcemerg_init_param *p, struct hpcemerg_ctx **ctx_p)
 {
 	int ret;
@@ -80,6 +102,10 @@ int hpcemerg_init(struct hpcemerg_init_param *p, struct hpcemerg_ctx **ctx_p)
 
 	ctx->param = *p;
 	ret = _hpcemerg_init(ctx);
+	if (ret < 0)
+		goto out_unlock;
+
+	ret = spawn_emergency_pool(ctx);
 	if (ret < 0)
 		goto out_unlock;
 

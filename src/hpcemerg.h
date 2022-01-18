@@ -27,13 +27,12 @@ struct hpcemerg_init_param {
 	void		(*user_func)(int sig, siginfo_t *si, ucontext_t *ctx);
 	uint32_t	handle_bits;
 	uint32_t	resv[3];
-	uint8_t		nr_thpool;
-	uint8_t		resv2[7];
 };
 
 struct hpcemerg_ctx {
 	uint8_t				stack[HPCEMERG_INTR_STKSZ];
 	struct hpcemerg_init_param	param;
+	pthread_t			thread;
 };
 
 extern void hpcemerg_fentry_enable(void);
