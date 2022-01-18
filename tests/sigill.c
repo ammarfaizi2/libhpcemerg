@@ -25,6 +25,8 @@ static void handler(int sig, siginfo_t *si, ucontext_t *ctx)
 		fprintf(stderr, "sig != SIGILL\n");
 		goto out;
 	}
+
+	ret = 0;
 out:
 	exit(ret);
 }
