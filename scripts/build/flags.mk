@@ -47,7 +47,7 @@ endif
 #
 # File dependency generator (especially for headers)
 #
-DEPFLAGS = -MT "$@" -MMD -MP -MF "$(@:$(BASE_DIR)/%.o=$(BASE_DEP_DIR)/%.d)"
+DEPFLAGS = -MT "$@" -MMD -MP -MF "$(@:$(BASE_DIR)/%=$(BASE_DEP_DIR)/%.d)"
 
 # Convert *.o filename to *.c
 O_TO_C = $(@:$(BASE_DIR)/%.o=%.c)
