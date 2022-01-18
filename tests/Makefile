@@ -15,6 +15,7 @@ TEST_EXECUTABLES := $(patsubst %.c,%,$(patsubst %.cc,%,$(TEST_SOURCES)))
 test: $(TEST_EXECUTABLES)
 
 %: %.c $(TARGET_BIN)
+	$(CC_PRINT)
 	$(Q)$(CC) $(PIC_FLAGS) $(INCLUDE_DIR) $(DEPFLAGS) \
 	$(CFLAGS) $(^) -o $(@) -L$(BASE_DIR) -lhpcemerg -Wl,-rpath="$(BASE_DIR)"
 
