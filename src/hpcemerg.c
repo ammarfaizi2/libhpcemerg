@@ -20,12 +20,9 @@ static void internal_hpcemerg_handler(int sig, siginfo_t *si, void *arg)
 static int install_signal_handler(struct hpcemerg_ctx *ctx)
 {
 	struct sigaction act;
+	uint32_t hbits = ctx->param.handle_bits;
 
-	memset(&act, 0, sizeof(act));
-	act.sa_sigaction = &internal_hpcemerg_handler;
-	act.sa_flags = SA_SIGINFO | SA_ONSTACK;
-
-	if (ctx->param.handle_bits & HPCEMERG_HANDLE_ALL) {
+	if (hbits & HPCEMERG_HANDLE_ALL) {
 		stack_t st;
 		st.ss_sp = ctx->stack;
 		st.ss_flags = 0;
@@ -34,6 +31,19 @@ static int install_signal_handler(struct hpcemerg_ctx *ctx)
 			return -errno;
 	}
 
+	memset(&act, 0, sizeof(act));
+	act.sa_sigaction = &internal_hpcemerg_handler;
+	act.sa_flags = SA_SIGINFO | SA_ONSTACK;
+
+	if (hbits & (HPCEMERG_HANDLE_BUG | HPCEMERG_HANDLE_WARN |
+		     HPCEMERG_HANDLE_SIGILL))
+		sigaction(SIGILL, &act, NULL);
+
+	if (hbits & HPCEMERG_HANDLE_SIGSEGV)
+		sigaction(SIGSEGV, &act, NULL);
+
+	if (hbits & HPCEMERG_HANDLE_SIGFPE)
+		sigaction(SIGFPE, &act, NULL);
 
 	return 0;
 }
