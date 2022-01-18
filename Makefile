@@ -126,7 +126,7 @@ config-host.mak: configure
 
 
 include $(BASE_DIR)/src/Makefile
-
+include $(BASE_DIR)/tests/Makefile
 
 #
 # Create dependency directories
@@ -170,7 +170,7 @@ $(TARGET_BIN): $(OBJ_CC) $(OBJ_PRE_CC)
 __all: $(EXT_DEP_FILE) $(TARGET_BIN)
 
 
-clean:
+clean: clean_test
 	$(Q)$(RM) -vf \
 		$(TARGET_BIN) \
 		$(OBJ_CC) \

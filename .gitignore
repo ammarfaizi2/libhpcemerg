@@ -16,3 +16,5 @@
 /.vscode/
 /config-host.h
 /config-host.mak
+
+/tests/sigill
