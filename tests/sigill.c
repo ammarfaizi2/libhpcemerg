@@ -14,14 +14,11 @@
 
 static struct hpcemerg_ctx *hpcemerg_ctx = NULL;
 
-static void handler(int sig, siginfo_t *si, ucontext_t *ctx)
+static void handler(struct hpcemerg_sig_ctx *sig_ctx)
 {
 	int ret = 1;
 
-	(void) si;
-	(void) ctx;
-
-	if (sig != SIGILL) {
+	if (sig_ctx->sig != SIGILL) {
 		fprintf(stderr, "sig != SIGILL\n");
 		goto out;
 	}

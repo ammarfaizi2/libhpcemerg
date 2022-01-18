@@ -7,6 +7,7 @@ DEP_DIRS += $(BASE_DEP_DIR)/tests
 
 TEST_SOURCES := \
 	sigill.c \
+	warn.c \
 	# EOF
 
 TEST_SOURCES := $(TEST_SOURCES:%=$(BASE_DIR)/tests/%)

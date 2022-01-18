@@ -3,6 +3,7 @@
  * Copyright (C)  2022 Ammar Faizi <ammarfaizi2@gmail.com>
  */
 
+#define __HPCEMERG_INTERNAL
 #include "hpcemerg.h"
 
 #include <errno.h>
@@ -15,11 +16,16 @@ static struct hpcemerg_ctx *g_ctx = NULL;
 
 static void internal_hpcemerg_handler(int sig, siginfo_t *si, void *arg)
 {
-	(void) sig;
-	(void) si;
-	(void) arg;
+	struct hpcemerg_sig_ctx sig_ctx = {
+		.sig		= sig,
+		.si		= si,
+		.ctx		= arg,
+		.trap_data	= NULL
+	};
+
+	__arch_handle_trap_data(g_ctx, &sig_ctx);
 	if (g_ctx->param.user_func)
-		g_ctx->param.user_func(sig, si, arg);
+		g_ctx->param.user_func(&sig_ctx);
 }
 
 static int install_signal_handler(struct hpcemerg_ctx *ctx)

@@ -18,3 +18,4 @@
 /config-host.mak
 
 /tests/sigill
+/tests/warn
