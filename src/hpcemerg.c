@@ -3,23 +3,38 @@
  * Copyright (C)  2022 Ammar Faizi <ammarfaizi2@gmail.com>
  */
 
-#include "hpcemerg.h"
-
 #include <errno.h>
 #include <stddef.h>
 #include <string.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <sys/mman.h>
 
+static volatile bool release_bug = false;
 static struct hpcemerg_ctx *g_ctx = NULL;
+
+#define __HPCEMERG_INTERNAL
+#include "hpcemerg.h"
 
 static void internal_hpcemerg_handler(int sig, siginfo_t *si, void *arg)
 {
-	(void) sig;
-	(void) si;
-	(void) arg;
+	struct hpcemerg_sig_ctx sig_ctx = {
+		.sig		= sig,
+		.si		= si,
+		.ctx		= arg,
+		.trap_data	= NULL
+	};
+
+	__arch_handle_trap_data(g_ctx, &sig_ctx);
 	if (g_ctx->param.user_func)
-		g_ctx->param.user_func(sig, si, arg);
+		g_ctx->param.user_func(&sig_ctx);
+
+	if (sig_ctx.trap_data) {
+		if (sig_ctx.trap_data->type == HPCEMERG_TRAP_BUG) {
+			while (!release_bug)
+				usleep(100000);
+		}
+	}
 }
 
 static int install_signal_handler(struct hpcemerg_ctx *ctx)
@@ -87,6 +102,11 @@ static int spawn_emergency_pool(struct hpcemerg_ctx *ctx)
 	pthread_detach(ctx->thread);
 	pthread_setname_np(ctx->thread, "hpcemerg-pool");
 	return 0;
+}
+
+void hpcemerg_set_release_bug(bool b)
+{
+	release_bug = b;
 }
 
 int hpcemerg_init(struct hpcemerg_init_param *p, struct hpcemerg_ctx **ctx_p)

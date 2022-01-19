@@ -17,4 +17,6 @@
 /config-host.h
 /config-host.mak
 
+/tests/bug
 /tests/sigill
+/tests/warn
