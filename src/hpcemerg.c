@@ -9,8 +9,11 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <sys/mman.h>
+#include <stdatomic.h>
 
-static volatile bool release_bug = false;
+static _Atomic(bool) stop_pool = false;
+static _Atomic(bool) release_bug = false;
+static _Atomic(bool) pool_is_online = false;
 static struct hpcemerg_ctx *g_ctx = NULL;
 
 #define __HPCEMERG_INTERNAL
@@ -87,6 +90,12 @@ static void *emergency_thread_pool(void *ctx_v)
 {
 	struct hpcemerg_ctx *ctx = ctx_v;
 
+	atomic_store_explicit(&pool_is_online, true, memory_order_release);
+
+	while (!atomic_load(&stop_pool))
+		usleep(100000);
+
+	atomic_store_explicit(&pool_is_online, false, memory_order_release);
 	(void) ctx;
 	return NULL;
 }
@@ -106,7 +115,7 @@ static int spawn_emergency_pool(struct hpcemerg_ctx *ctx)
 
 void hpcemerg_set_release_bug(bool b)
 {
-	release_bug = b;
+	atomic_store_explicit(&release_bug, b, memory_order_release);
 }
 
 int hpcemerg_init(struct hpcemerg_init_param *p, struct hpcemerg_ctx **ctx_p)
@@ -142,4 +151,13 @@ out_unlock:
 out_unmap:
 	munmap(ctx, sizeof(*ctx));
 	return ret;
+}
+
+void hpcemerg_destroy(struct hpcemerg_ctx *ctx)
+{
+	atomic_store(&stop_pool, true);
+	munlock(ctx, sizeof(*ctx));
+	munmap(ctx, sizeof(*ctx));
+	while (atomic_load(&pool_is_online))
+		usleep(10000);
 }
