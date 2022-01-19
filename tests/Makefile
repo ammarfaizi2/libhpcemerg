@@ -6,6 +6,7 @@
 DEP_DIRS += $(BASE_DEP_DIR)/tests
 
 TEST_SOURCES := \
+	bug.c \
 	sigill.c \
 	warn.c \
 	# EOF

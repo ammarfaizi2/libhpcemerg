@@ -75,6 +75,18 @@ do {							\
 	(__cond);				\
 })
 
+#define BUG()						\
+do {							\
+	HPCEMERG_SET_TRAP(ASM_UD2, HPCEMERG_TRAP_BUG);	\
+} while (0)						\
+
+#define BUG_ON(COND) ({				\
+	bool __cond = (COND);			\
+	if (__builtin_expect(__cond, 0))	\
+		BUG();				\
+	(__cond);				\
+})
+
 
 #ifdef __HPCEMERG_INTERNAL
 
@@ -118,18 +130,26 @@ __always_inline
 static inline void handle_trap(struct hpcemerg_ctx *ctx,
 			       struct hpcemerg_sig_ctx *sig_ctx)
 {
+	unsigned type;
+	uint32_t hb = ctx->param.handle_bits;
 	ucontext_t *uctx = sig_ctx->ctx;
 	mcontext_t *mctx = &uctx->uc_mcontext;
 	uintptr_t *regs = (uintptr_t *) &mctx->gregs;
 	void *rip = (void *) regs[REG_RIP];
 
 	if (!is_hpcemerg_trap_pattern(rip))
-		raise(SIGILL);
+		raise(sig_ctx->sig);
 
 	sig_ctx->trap_data = get_trap_data(rip);
 
 	/* Skip the ud2 and lea. */
 	regs[REG_RIP] += 5 + 4;
+
+	type = sig_ctx->trap_data->type;
+	if (type == HPCEMERG_TRAP_WARN && !(hb & HPCEMERG_HANDLE_WARN))
+		raise(sig_ctx->sig);
+	if (type == HPCEMERG_TRAP_BUG && !(hb & HPCEMERG_HANDLE_BUG))
+		raise(sig_ctx->sig);
 }
 
 __always_inline
@@ -138,7 +158,8 @@ static inline void __arch_handle_trap_data(struct hpcemerg_ctx *ctx,
 {
 	switch (sig_ctx->sig) {
 	case SIGILL:
-		if (ctx->param.handle_bits & HPCEMERG_HANDLE_WARN)
+		if (ctx->param.handle_bits & (HPCEMERG_HANDLE_WARN |
+					      HPCEMERG_HANDLE_BUG))
 			handle_trap(ctx, sig_ctx);
 		break;
 	}
