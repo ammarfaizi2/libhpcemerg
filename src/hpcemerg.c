@@ -34,7 +34,7 @@ static void internal_hpcemerg_handler(int sig, siginfo_t *si, void *arg)
 
 	if (sig_ctx.trap_data) {
 		if (sig_ctx.trap_data->type == HPCEMERG_TRAP_BUG) {
-			while (!release_bug)
+			while (!atomic_load(&release_bug))
 				usleep(100000);
 		}
 	}
