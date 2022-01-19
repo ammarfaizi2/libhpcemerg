@@ -91,6 +91,6 @@ int main(void)
 	ASSERT_WARN(__FILE__, __LINE__ - 1, __func__);
 	BUG();
 	ASSERT_WARN(__FILE__, __LINE__ - 1, __func__);
-
+	hpcemerg_destroy(hpcemerg_ctx);
 	return ret;
 }

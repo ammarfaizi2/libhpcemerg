@@ -118,5 +118,6 @@ int main(void)
 		return ret;
 
 	ret = warn_with_loop();
+	hpcemerg_destroy(hpcemerg_ctx);
 	return ret;
 }
