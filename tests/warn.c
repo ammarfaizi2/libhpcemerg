@@ -17,6 +17,32 @@ static struct hpcemerg_ctx *hpcemerg_ctx = NULL;
 
 static void handler(struct hpcemerg_sig_ctx *sig_ctx)
 {
+	if (sig_ctx->sig != SIGILL) {
+		/*
+		 * WARN*() generates SIGILL.
+		 */
+		fprintf(stderr, "sig != SIGILL\n");
+		exit(1);
+	}
+
+	if (sig_ctx->trap_data == NULL) {
+		/*
+		 * WARN*() must set trap_data.
+		 */
+		fprintf(stderr, "sig_ctx->trap_data == NULL\n");
+		exit(1);
+	}
+
+	if (sig_ctx->trap_data->type != HPCEMERG_TRAP_WARN) {
+		fprintf(stderr,
+			"sig_ctx->trap_data.type != HPCEMERG_TRAP_WARN)\n");
+		exit(1);
+	}
+
+	/*
+	 * Copy the trap_data to a global variable,
+	 * we will inspect the value from ASSERT_WARN().
+	 */
 	memcpy(&g_td, sig_ctx->trap_data, sizeof(g_td));
 }
 
