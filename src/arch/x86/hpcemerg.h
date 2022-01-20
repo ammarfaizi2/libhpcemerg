@@ -94,7 +94,7 @@ do {							\
 #include <string.h>
 
 __always_inline
-static inline bool is_hpcemerg_trap_pattern(void *rip)
+static bool is_hpcemerg_trap_pattern(void *rip)
 {
 	/*
 	 * "\x0f\x0b"		ud2
@@ -104,7 +104,7 @@ static inline bool is_hpcemerg_trap_pattern(void *rip)
 }
 
 __always_inline
-static inline struct hpcemerg_trap_data *get_trap_data(void *rip)
+static struct hpcemerg_trap_data *get_trap_data(void *rip)
 {
 	int32_t rel32;
 	void *lea_pos = (void *) ((uintptr_t) rip + 5);
@@ -127,8 +127,8 @@ static inline struct hpcemerg_trap_data *get_trap_data(void *rip)
 }
 
 __always_inline
-static inline void handle_trap(struct hpcemerg_ctx *ctx,
-			       struct hpcemerg_sig_ctx *sig_ctx)
+static void handle_trap(struct hpcemerg_ctx *ctx,
+			struct hpcemerg_sig_ctx *sig_ctx)
 {
 	unsigned type;
 	uint32_t hb = ctx->param.handle_bits;
@@ -153,8 +153,8 @@ static inline void handle_trap(struct hpcemerg_ctx *ctx,
 }
 
 __always_inline
-static inline void __arch_handle_trap_data(struct hpcemerg_ctx *ctx,
-					   struct hpcemerg_sig_ctx *sig_ctx)
+static void __arch_handle_trap_data(struct hpcemerg_ctx *ctx,
+				    struct hpcemerg_sig_ctx *sig_ctx)
 {
 	switch (sig_ctx->sig) {
 	case SIGILL:
