@@ -165,6 +165,63 @@ static void __arch_handle_trap_data(struct hpcemerg_ctx *ctx,
 	}
 }
 
+__always_inline
+static void dump_code(char *buf, void *addr)
+{
+	unsigned char *end, *start = (unsigned char *)addr;
+	start -= 42;
+	end = start + 64;
+	while (start < end) {
+		buf += sprintf(
+			buf,
+			(start == (unsigned char *)addr) ? "<%02x> " : "%02x ",
+			(unsigned)*start
+		);
+		start++;
+	}
+}
+
+__always_inline
+static size_t __arch_hpcemerg_register_dump(char *buffer, size_t maxlen,
+					    struct hpcemerg_sig_ctx *sig_ctx)
+{
+	int ret;
+	char code_buf[512];
+	ucontext_t *uctx = sig_ctx->ctx;
+	mcontext_t *mctx = &uctx->uc_mcontext;
+	uintptr_t *regs = (uintptr_t *) &mctx->gregs;
+	unsigned short cgfs[4]; /* unsigned short cs, gs, fs, ss.  */
+
+	dump_code(code_buf, (void *)regs[REG_RIP]);
+	memcpy(cgfs, &regs[REG_CSGSFS], sizeof(cgfs));
+	ret = snprintf(buffer, maxlen,
+		"  RIP: %016lx\n"
+		"  Code: %s\n"
+		"  RSP: %016lx EFLAGS: %08lx\n"
+		"  RAX: %016lx RBX: %016lx RCX: %016lx\n"
+		"  RDX: %016lx RSI: %016lx RDI: %016lx\n"
+		"  RBP: %016lx R08: %016lx R09: %016lx\n"
+		"  R10: %016lx R11: %016lx R12: %016lx\n"
+		"  R13: %016lx R14: %016lx R15: %016lx\n"
+		"  CS: %04x GS: %04x FS: %04x SS: %04x\n"
+		"  CR2: %016lx\n",
+		regs[REG_RIP],
+		code_buf,
+		regs[REG_RSP], regs[REG_EFL],
+		regs[REG_RAX], regs[REG_RBX], regs[REG_RCX],
+		regs[REG_RDX], regs[REG_RSI], regs[REG_RDI],
+		regs[REG_RBP], regs[REG_R8], regs[REG_R9],
+		regs[REG_R10], regs[REG_R11], regs[REG_R12],
+		regs[REG_R13], regs[REG_R14], regs[REG_R15],
+			/* cs */ cgfs[0],
+			/* gs */ cgfs[1],
+			/* fs */ cgfs[2],
+			/* ss */ cgfs[3],
+		regs[REG_CR2]);
+
+	return (size_t) ret;
+}
+
 #endif /* #ifdef __HPCEMERG_INTERNAL */
 
 #endif /* #ifndef ARCH__X86__HPCEMERG_H__ */

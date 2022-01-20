@@ -55,6 +55,8 @@ extern int hpcemerg_init(struct hpcemerg_init_param *p,
 			 struct hpcemerg_ctx **ctx_p);
 extern void hpcemerg_destroy(struct hpcemerg_ctx *p);
 extern void hpcemerg_set_release_bug(bool b);
+extern size_t hpcemerg_register_dump(char *buffer, size_t maxlen,
+				     struct hpcemerg_sig_ctx *sig_ctx);
 
 #define HPCEMERG_HANDLE_BUG	(1u << 0u)
 #define HPCEMERG_HANDLE_WARN	(1u << 1u)
