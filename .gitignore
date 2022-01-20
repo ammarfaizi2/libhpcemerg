@@ -18,5 +18,6 @@
 /config-host.mak
 
 /tests/bug
+/tests/reg_dump
 /tests/sigill
 /tests/warn
