@@ -3,6 +3,7 @@
  * Copyright (C)  2022 Ammar Faizi <ammarfaizi2@gmail.com>
  */
 
+#include <stdio.h>
 #include <errno.h>
 #include <stddef.h>
 #include <string.h>
@@ -34,7 +35,7 @@ static void internal_hpcemerg_handler(int sig, siginfo_t *si, void *arg)
 
 	if (sig_ctx.trap_data) {
 		if (sig_ctx.trap_data->type == HPCEMERG_TRAP_BUG) {
-			while (!release_bug)
+			while (!atomic_load(&release_bug))
 				usleep(100000);
 		}
 	}
@@ -160,4 +161,10 @@ void hpcemerg_destroy(struct hpcemerg_ctx *ctx)
 	munmap(ctx, sizeof(*ctx));
 	while (atomic_load(&pool_is_online))
 		usleep(10000);
+}
+
+size_t hpcemerg_register_dump(char *buffer, size_t maxlen,
+			      struct hpcemerg_sig_ctx *sig_ctx)
+{
+	return __arch_hpcemerg_register_dump(buffer, maxlen, sig_ctx);
 }
